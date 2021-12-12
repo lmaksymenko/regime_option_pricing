@@ -138,6 +138,7 @@ regimeRead <- function(df) {
   colnames(l) = c("Regime","Start Time","End Time","Mean","Standard Deviation")
   counter = 1
   carryOver = NULL
+  
   for (k in 2:78) {
     set1 = rbind(carryOver,df[which(df$baskets == (k-1)),])
     s1 = as.character(set1$Time)
