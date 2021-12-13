@@ -15,7 +15,6 @@
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 parse_ticker_data <- function(ticker){
-  #ticker = 'FB'
   rd = paste(getwd(), "/raw_data/", ticker, sep = '')
   wd = paste(getwd(), "/proc_data/", ticker, sep = '')
 
@@ -26,7 +25,6 @@ parse_ticker_data <- function(ticker){
   dir_files = list.files(rd)
   
   for (file in dir_files){
-    #file = dir_files
     data = read.csv(paste(rd, '/', file, sep = ''))
     data['X.DATETIME.'] = paste(data$X.DATE., data$X.TIME.)
     data$X.DATE. = NULL
@@ -46,29 +44,3 @@ parse_ticker_data <- function(ticker){
 
 #run the function
 parse_ticker_data('FB')
-
-
-
-
-############ TESTING
-
-
-library(lubridate)
-
-x = data$datetime[1] 
-x = x - days(1) #or %m-%
-x$yday
-x
-names(unclass(x))
-
-
-
-###Subsetting the data
-d = "1/3/20"
-lower = strptime(paste(d, "09:29"), "%m/%d/%y %H:%M")
-upper = lower + minutes(392)
-
-new = subset(data, data$datetime > lower & data$datetime < upper)
-
-paste( 120 == data$datetime[505]$year) 
-
