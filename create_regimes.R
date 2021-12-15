@@ -28,11 +28,17 @@ load_data <- function (ticker, date, method, num){
   
   paste(wd, '/', ticker, '_', tmp$year-100, sep = '')
   
-  get_day_data <- function(ticker, dates, wd){
-    #gets data for 
+  
+  
+  get_data <- function(ticker, dates, wd){
+    #The only point of this function is querying the day data for a given list of days
     
     #sub 100 bc posix 
     df = read.csv(paste(wd, '/', ticker, '_', date$year-100, sep = ''))
+    #turn datetime back into posix
+    
+    upper = 
+    lower = 
     
     tmp = subset(data, data$datetime > lower & data$datetime < upper)
     return(tmp['close'])
@@ -43,22 +49,13 @@ load_data <- function (ticker, date, method, num){
   #daily
   if (method == 0){
     days = lapply(c(0:num), function(x) c(tmp - days(x), tmp - days(x) + minutes(392)))
-    
-    
-    
-    
-    for (day in days){
-      #pull files
-    }
+    get_data(ticker, dates, wd)
   }
   
   #weekly
   if (method == 1){
     days = lapply(c(0:num), function(x) c(tmp - weeks(x), tmp - weeks(x) + minutes(392)))
 
-    for (day in days){
-      #pull files
-    }
   }
   
   #monthly
@@ -124,3 +121,6 @@ upper = lower + minutes(392)
 new = subset(data, data$datetime > lower & data$datetime < upper)
 
 paste( 120 == data$datetime[505]$year) 
+
+
+unclass(tmp)
