@@ -31,7 +31,7 @@ parse_ticker_data <- function(ticker){
   for (file in dir_files){
     #read in and clean the data
     data = read.csv(paste(rd, '/', file, sep = ''))
-    data['X.DATETIME.'] = paste(data$X.DATE., data$X.TIME.)
+    data['X.DATETIME.'] = paste(data$X.DATE., data$X.TIME.) #combining datetime
     data$X.DATETIME. = strptime(data$X.DATETIME., '%m/%d/%y %H:%M')
     data$X.DATE. = NULL
     data$X.TIME. = NULL
