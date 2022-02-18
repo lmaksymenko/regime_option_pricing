@@ -19,6 +19,7 @@
 
 
 #dynamic cwd set
+rm(list = ls())
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 parse_ticker_data <- function(ticker){
@@ -34,9 +35,8 @@ parse_ticker_data <- function(ticker){
     data['X.DATETIME.'] = paste(data$X.DATE., data$X.TIME.) #combining datetime
     data$X.DATETIME. = strptime(data$X.DATETIME., '%m/%d/%y %H:%M')
     data$X.DATE. = NULL
-    data$X.TIME. = NULL
     data$X.PER. = NULL
-    colnames(data) = c('ticker', 'open', 'high', 'low', 'close', 'volume', 'datetime')
+    colnames(data) = c('ticker', 'time', 'open', 'high', 'low', 'close', 'volume', 'datetime')
     
     ##combining data
  
@@ -61,6 +61,8 @@ parse_ticker_data <- function(ticker){
   write.csv(final_df, paste(getwd(), "/proc_data/", ticker, sep = ''))
 
 }
+
+
 
 #run the function
 parse_ticker_data('FB')

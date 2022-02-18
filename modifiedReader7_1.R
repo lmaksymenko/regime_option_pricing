@@ -194,6 +194,7 @@ if (!(dir.exists(paste(getwd(), "/regimes", sep='')))) {
 for (i in 1:length(folders)) {
   folder = folders[i]
   stonks = list.files(folder)
+  
   for (j in 1:length(stonks)){
     # getting only the ticker - ".csv" is attached to end
     stonk = substr(stonks[j], 1, nchar(stonks[j]) - 4)
