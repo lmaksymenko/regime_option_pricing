@@ -5,6 +5,7 @@ library(lubridate)
 library(bizdays)
 
 #dynamic wd
+rm(list = ls())
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 load_data <- function (ticker, date, method, num){
@@ -96,7 +97,7 @@ load_data <- function (ticker, date, method, num){
   }
   
   #return the dataframe
-  return(get_data(ticker, dates, wd))
+  return(data.frame(get_data(ticker, dates, wd)))
   
 }
 
@@ -105,7 +106,7 @@ load_data <- function (ticker, date, method, num){
 #add data encoding for the regimes, to include ticker, date, lag, type 
 #for data retrieval during options pricing
 
-create_regimes <- function(data){
+create_regimes <- function(data, ticker){
   #creates regimes based on matrix input
   
   wd = paste(getwd(), '/regimes/', ticker, sep = '')
@@ -139,7 +140,7 @@ create_regimes <- function(data){
   
   for (i in seq(from = 1 + smpl, to = 389, by = smpl)){
     #old data
-    curr_reg = rbind(curr_reg, log_data[(i - smpl):(i - 1), 1])
+    curr_reg = c(curr_reg, unlist(log_data[(i - smpl):(i - 1), ], use.names = FALSE) )#last is col
     
     #TODO
     #for each day in the data
@@ -149,15 +150,22 @@ create_regimes <- function(data){
     # }
     
     #data
-    new_data = log_data[i:(i + smpl - 1), 1]
+    new_data = log_data[i:(i + smpl - 1), ]  #last is col
+    
+    #fix format
+    new_data = unlist(new_data, use.names = FALSE)
+    
+    #print(unlist(new_data, use.names = FALSE))
     
     if(ks.test(curr_reg, new_data)$p.value < 0.05){  #replace with ks.boot?, allwos ties
       #new regime
+      
+      #print(curr_reg)
       tmp = c(count,
               start,#start index
               i,#stop index
-              mean(curr_reg),
-              sd(curr_reg))
+              mean(curr_reg, na.rm = TRUE),
+              sd(curr_reg, na.rm = TRUE))
       regs = rbind(regs, tmp)
       
       start = i
@@ -173,8 +181,8 @@ create_regimes <- function(data){
   tmp = c(count,
           start,#start index
           390,#stop index
-          mean(new_data, na.rm=TRUE),
-          sd(new_data, na.rm=TRUE))
+          mean(new_data, na.rm = TRUE),
+          sd(new_data, na.rm = TRUE))
   regs = rbind(regs, tmp)
   
   return(regs)
@@ -182,14 +190,16 @@ create_regimes <- function(data){
 
 ################################################
 ####In progress stuff outside function
-
-
-
-#######################################
+################################################
 
 t = load_data('FB', '4/14/20', 0, 10)
 data = t
-# 
+
+create_regimes(t, 'FB')
+
+
+
+.# 
 # {
 # 
 # 
@@ -273,4 +283,4 @@ data = t
 # }
 # 
 
-#create_regimes(t)
+

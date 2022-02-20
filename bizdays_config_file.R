@@ -15,6 +15,6 @@ create.calendar(name = 'USA 1980-2030',
                 holidays = hol,
                 weekdays=c("saturday", "sunday"),
                 start.date = '1980-1-1',
-                end.date = '2031-1-1',)
+                end.date = '2031-1-1')
 
 calendars()
