@@ -22,7 +22,7 @@ load_data <- function (ticker, date, method, num){
   
   
   wd = paste(getwd(), '/proc_data/', ticker, sep = '')
-  tmp = strptime(paste(date, "09:29"), "%m/%d/%y %H:%M", 'EST')#9:29 bc non-inclusive select
+  tmp = strptime(paste(date, "09:29"), "%m-%d-%y %H:%M", 'EST')#9:29 bc non-inclusive select
 
   #TODO: Breaks if the day data doesnt exist
   get_data <- function(ticker, dates, wd){
@@ -98,7 +98,6 @@ load_data <- function (ticker, date, method, num){
   
   #return the dataframe
   return(data.frame(get_data(ticker, dates, wd)))
-  
 }
 
 ###
@@ -106,7 +105,7 @@ load_data <- function (ticker, date, method, num){
 #add data encoding for the regimes, to include ticker, date, lag, type 
 #for data retrieval during options pricing
 
-create_regimes <- function(data, ticker){
+create_regimes <- function(data, ticker, save_file){
   #creates regimes based on matrix input
   
   wd = paste(getwd(), '/regimes/', ticker, sep = '')
@@ -184,22 +183,40 @@ create_regimes <- function(data, ticker){
           mean(new_data, na.rm = TRUE),
           sd(new_data, na.rm = TRUE))
   regs = rbind(regs, tmp)
+
   
   return(regs)
 }
+
+create_regimes_wrapper <- function(ticker, date, method, num, save_file){
+  dt = load_data(ticker, date, method, num)
+  reg = create_regimes(t, ticker)
+  wd = paste(getwd(), '/regimes/', ticker, sep = '')
+  w_loc = paste(wd, '/',
+                ticker, '_', 
+                date, '_', 
+                method, '_', 
+                num, '.csv', sep ='')
+
+  if (save_file){
+    write.table(reg, file = w_loc, row.names = FALSE) 
+  }
+  
+  return(reg)
+}
+
 
 ################################################
 ####In progress stuff outside function
 ################################################
 
-t = load_data('FB', '4/14/20', 0, 10)
+t = load_data('FB', '4-14-20', 0, 10)
 data = t
-
 create_regimes(t, 'FB')
 
+create_regimes_wrapper('FB', '4-14-20', 0, 10, TRUE)
 
-
-.# 
+# 
 # {
 # 
 # 

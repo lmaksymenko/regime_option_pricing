@@ -1,7 +1,7 @@
 #creates the trading day calendar
 
 library(bizdays)
-library(libridate)
+library(lubridate)
 
 rm(list = ls())
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
