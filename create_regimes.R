@@ -120,7 +120,9 @@ create_regimes <- function(data, ticker, save_file){
   
   for (col in colnames(data)){
     #adding 1 to avoid NaNs from neg logs
-    log_data[,col] = log( c(diff(data[,col])/data[,col][-1]) + 1 )
+    #log_data[,col] = log( c(diff(data[,col])/data[,col][-1]) + 1)# dont add 1 s
+    log_data[,col] = diff(log(data[,col]))
+        #
   }
   
   #params
@@ -128,8 +130,8 @@ create_regimes <- function(data, ticker, save_file){
   day_scale = c(5,4,3,2,1,0) #how we discount the previous days
   
   #for loop vars
-  regs = matrix(ncol = 5, nrow=0)
-  colnames(regs) = c("Regime","Start Time","End Time","Mean","Standard Deviation")
+  regs = matrix(ncol = 6, nrow=0)
+  colnames(regs) = c("Regime","Start Time","End Time","Mean","Standard Deviation","Volatility")
   
   #helper vars
   curr_reg = c()
@@ -164,7 +166,8 @@ create_regimes <- function(data, ticker, save_file){
               start,#start index
               i,#stop index
               mean(curr_reg, na.rm = TRUE),
-              sd(curr_reg, na.rm = TRUE))
+              sd(curr_reg, na.rm = TRUE),
+              sd(curr_reg, na.rm = TRUE) * sqrt(60*6.5*252))
       regs = rbind(regs, tmp)
       
       start = i
@@ -181,7 +184,8 @@ create_regimes <- function(data, ticker, save_file){
           start,#start index
           390,#stop index
           mean(new_data, na.rm = TRUE),
-          sd(new_data, na.rm = TRUE))
+          sd(new_data, na.rm = TRUE),
+          sd(curr_reg, na.rm = TRUE) * sqrt(60*6.5*252))
   regs = rbind(regs, tmp)
 
   
@@ -190,7 +194,7 @@ create_regimes <- function(data, ticker, save_file){
 
 create_regimes_wrapper <- function(ticker, date, method, num, save_file){
   dt = load_data(ticker, date, method, num)
-  reg = create_regimes(t, ticker)
+  reg = create_regimes(dt, ticker)
   wd = paste(getwd(), '/regimes/', ticker, sep = '')
   w_loc = paste(wd, '/',
                 ticker, '_', 
@@ -211,8 +215,8 @@ create_regimes_wrapper <- function(ticker, date, method, num, save_file){
 ################################################
 
 t = load_data('FB', '4-14-20', 0, 10)
-data = t
-create_regimes(t, 'FB')
+# data = t
+# create_regimes(t, 'FB')
 
 create_regimes_wrapper('FB', '4-14-20', 0, 10, TRUE)
 

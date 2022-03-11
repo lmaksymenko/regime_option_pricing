@@ -43,7 +43,7 @@ load_data <- function (ticker, date, method, num){
   
   
   wd = paste(getwd(), '/proc_data/', ticker, sep = '')
-  tmp = strptime(paste(date, "09:29"), "%m/%d/%y %H:%M", 'EST')#9:29 bc non-inclusive select
+  tmp = strptime(paste(date, "09:29"), "%m-%d-%y %H:%M", 'EST')#9:29 bc non-inclusive select
   
   #TODO: Breaks if the day data doesnt exist
   get_data <- function(ticker, dates, wd){
@@ -121,7 +121,6 @@ load_data <- function (ticker, date, method, num){
   return(data.frame(get_data(ticker, dates, wd)))
 }
 
-
 #startdate, method, num_periods, ticker 
 
 price_options <- function(type, reg_data, date){
@@ -154,74 +153,83 @@ price_options <- function(type, reg_data, date){
 }
 
 
-
+{
 ####TESTING STUFF#######
-data = load_data('FB', '4-14-20', 0, 0)
-data = as.vector(data[,1], mode = 'numeric')
-
-regs = read.table(paste(getwd(), '/regimes/FB/FB_4-14-20_0_10.csv', sep = ''), header = TRUE)
-
-mat = matrix(data = NA, nrow = 390, ncol = 3)
-mat[,1] = data
-
-for(i in 1:nrow(regs)){
-  mat[regs[i, 'Start.Time']:regs[i,'End.Time'], 2] = regs[i, 'Mean']
-  mat[regs[i, 'Start.Time']:regs[i,'End.Time'], 3] = regs[i, 'Standard.Deviation']
+# data = load_data('FB', '4-14-20', 0, 0)
+# data = as.vector(data[,1], mode = 'numeric')
+# 
+# regs = read.table(paste(getwd(), '/regimes/FB/FB_4-14-20_0_10.csv', sep = ''), header = TRUE)
+# 
+# mat = matrix(data = NA, nrow = 390, ncol = 3)
+# mat[,1] = data
+# 
+# for(i in 1:nrow(regs)){
+#   mat[regs[i, 'Start.Time']:regs[i,'End.Time'], 2] = regs[i, 'Mean']
+#   mat[regs[i, 'Start.Time']:regs[i,'End.Time'], 3] = regs[i, 'Standard.Deviation']
+# }
 }
 
-
-
-#weighted by rest of regimes - fuck
-
-
 ###TRY AGAIN###
-
+{
 data = load_data('FB', '4-14-20', 0, 0)
 data = as.vector(data[,1], mode = 'numeric')
 
 regs = read.table(paste(getwd(), '/regimes/FB/FB_4-14-20_0_10.csv', sep = ''), header = TRUE)
 
 #BS params##
-strike = data[1]
+strike = data[1] #how do we decide this, does this change throughout the day
 rfr = 0.01
 type = 'call'
-tte = 390 #* (days) #needs to be number of names
+days = 1 #days until exp
 
 mat = matrix(data = NA, nrow = 390, ncol = 2)
 mat[,1] = data
 
 reg_time = matrix(data = NA, nrow = nrow(regs), ncol = 1)
 
-for(i in 1:nrow(regs)){
-  #print(length(rep.int(i, regs[i,'End.Time']- regs[i, 'Start.Time'])))
+for(i in 1:nrow(regs)){ #fix this times
   mat[regs[i, 'Start.Time']:regs[i,'End.Time'], 2] = rep.int(i, regs[i,'End.Time']- regs[i, 'Start.Time'] + 1)
-  reg_time[i,1] = regs[i,'End.Time'] - regs[i, 'Start.Time']#sums to 389 min
+  reg_time[i,1] = (regs[i,'End.Time'] - regs[i, 'Start.Time']) * days #sums to 389 min
 }
 
 
-
-
+prices = c()
 #pricing loop
 for(i in 1:nrow(mat)){
-  reg_data = 
-  
   #stockPrice -k, strikePrice-k , riskFreeRate-k , timeToExpiry, volatility, type
-  #how do we know time until exp?
   #what vol do we need
   
-  #do this for each reg, then weighted avg
-  BlackScholes(mat[i,1], 
-               strike, 
-               rfr, 
-               tte,#this is tough 
-               regs[mat[i,2], 'Standard.Deviation'], 
-               type)
+  bs_tmp = c()#output of all the BS models for the min
   
+  for(r in 1:nrow(regs)){ # TODO, seems like you can pass a vec of vols into regimes
+    #do this for each reg, then weighted avg
+    bs_tmp = c(bs_tmp, BlackScholes(mat[i,1], #stock price
+                                    strike, #option strike
+                                    rfr, 
+                                    reg_time[r,1] / (60 * 6.5 * 252),#time till exp in years
+                                    regs[r, 'Volatility'], #annualized vol of regime
+                                    type))
+  }
+  #could use log ret to find regimes, we could use realized vol instead of log returns to get the vol (stretch)
+  #p = weighted.mean(bs_tmp, w = reg_time)
+  weight = (reg_time / sum(reg_time))
+  p = sum(bs_tmp * weight)
+  prices = c(prices, p)
+  
+  print(reg_time)
   
   #sub times
   reg_time[mat[i,2], 1] = reg_time[mat[i,2], 1] - 1
-  tte = tte - 1
 }
+#should output 389 prices
+#at start of min at end of day cant trade
+
+
+}
+length(prices)
+
+prices
+
 
 sum(reg_time[,1])
 
