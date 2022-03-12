@@ -15,6 +15,7 @@ BlackScholes <- function(stockPrice, strikePrice, riskFreeRate, timeToExpiry, vo
   if(type == "call"){
     d1 <- (log(stockPrice/strikePrice) + (riskFreeRate + volatility^2/2)*timeToExpiry) / (volatility*sqrt(timeToExpiry))
     d2 <- d1 - volatility*sqrt(timeToExpiry)
+  
     
     value <- stockPrice*pnorm(d1) - strikePrice*exp(-riskFreeRate*timeToExpiry)*pnorm(d2)
     return(value)
@@ -175,6 +176,7 @@ data = load_data('FB', '4-14-20', 0, 0)
 data = as.vector(data[,1], mode = 'numeric')
 
 regs = read.table(paste(getwd(), '/regimes/FB/FB_4-14-20_0_10.csv', sep = ''), header = TRUE)
+vol = as.numeric(unlist(regs['Volatility']))
 
 #BS params##
 strike = data[1] #how do we decide this, does this change throughout the day
@@ -182,37 +184,56 @@ rfr = 0.01
 type = 'call'
 days = 1 #days until exp
 
+
+bs_tmp = c()
+
 mat = matrix(data = NA, nrow = 390, ncol = 2)
 mat[,1] = data
 
 reg_time = matrix(data = NA, nrow = nrow(regs), ncol = 1)
 
+#regs[1,]
+
 for(i in 1:nrow(regs)){ #fix this times
+  print(regs[i,'End.Time']- regs[i, 'Start.Time'])
   mat[regs[i, 'Start.Time']:regs[i,'End.Time'], 2] = rep.int(i, regs[i,'End.Time']- regs[i, 'Start.Time'] + 1)
   reg_time[i,1] = (regs[i,'End.Time'] - regs[i, 'Start.Time']) * days #sums to 389 min
 }
 
+sum(reg_time)
 
 prices = c()
 #pricing loop
-for(i in 1:nrow(mat)){
+for(i in 2:(nrow(mat))){
   #stockPrice -k, strikePrice-k , riskFreeRate-k , timeToExpiry, volatility, type
   #what vol do we need
   
-  bs_tmp = c()#output of all the BS models for the min
   
-  for(r in 1:nrow(regs)){ # TODO, seems like you can pass a vec of vols into regimes
-    #do this for each reg, then weighted avg
-    bs_tmp = c(bs_tmp, BlackScholes(mat[i,1], #stock price
-                                    strike, #option strike
-                                    rfr, 
-                                    reg_time[r,1] / (60 * 6.5 * 252),#time till exp in years
-                                    regs[r, 'Volatility'], #annualized vol of regime
-                                    type))
+  {
+  # bs_tmp = c()#output of all the BS models for the min
+  # 
+  # for(r in 1:nrow(regs)){ # TODO, seems like you can pass a vec of vols into regimes
+  #   #do this for each reg, then weighted avg
+  #   bs_tmp = c(bs_tmp, BlackScholes(mat[i,1], #stock price
+  #                                   strike, #option strike
+  #                                   rfr, 
+  #                                   reg_time[r,1] / (60 * 6.5 * 252),#time till exp in years
+  #                                   regs[r, 'Volatility'], #annualized vol of regime
+  #                                   type))
+  # }
   }
+  
+  bs_tmp = BlackScholes(mat[i,1], #stock price
+                        strike, #option strike
+                        rfr,
+                        reg_time[,1] / (60 * 6.5 * 252),#time till exp in years
+                        vol, #annualized vol of regimes
+                        type)
+  
+  
   #could use log ret to find regimes, we could use realized vol instead of log returns to get the vol (stretch)
   #p = weighted.mean(bs_tmp, w = reg_time)
-  weight = (reg_time / sum(reg_time))
+  weight = reg_time / sum(reg_time)
   p = sum(bs_tmp * weight)
   prices = c(prices, p)
   
@@ -227,6 +248,8 @@ for(i in 1:nrow(mat)){
 
 }
 length(prices)
+length(mat[,1])
+length(mat[,1])
 
 prices
 
@@ -234,4 +257,3 @@ prices
 sum(reg_time[,1])
 
 
-       

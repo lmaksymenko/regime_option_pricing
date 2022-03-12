@@ -127,17 +127,18 @@ create_regimes <- function(data, ticker, save_file){
   
   #params
   smpl = 5 #number of minutes we sample
-  day_scale = c(5,4,3,2,1,0) #how we discount the previous days
+  
+  
+  day_scale = c(5,4,3,2,1,0) #how we discount the previous days(unused)
   
   #for loop vars
-  regs = matrix(ncol = 6, nrow=0)
+  regs = matrix(ncol = 6, nrow = 0)
   colnames(regs) = c("Regime","Start Time","End Time","Mean","Standard Deviation","Volatility")
   
   #helper vars
   curr_reg = c()
   start = 1
   count = 1
-  
   
   for (i in seq(from = 1 + smpl, to = 389, by = smpl)){
     #old data
@@ -158,7 +159,7 @@ create_regimes <- function(data, ticker, save_file){
     
     #print(unlist(new_data, use.names = FALSE))
     
-    if(ks.test(curr_reg, new_data)$p.value < 0.05){  #replace with ks.boot?, allwos ties
+    if(ks.test(curr_reg, new_data)$p.value < 0.05){  #replace with ks.boot?, allows ties
       #new regime
       
       #print(curr_reg)
