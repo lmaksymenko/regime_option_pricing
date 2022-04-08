@@ -122,7 +122,6 @@ load_data <- function (ticker, date, method, num){
   return(data.frame(get_data(ticker, dates, wd)))
 }
 
-#startdate, method, num_periods, ticker 
 
 price_options <- function(type, reg_data, date){
   #prices options 
@@ -200,13 +199,11 @@ for(i in 1:nrow(regs)){ #fix this times
   reg_time[i,1] = (regs[i,'End.Time'] - regs[i, 'Start.Time']) * days #sums to 389 min
 }
 
-sum(reg_time)
-
 prices = c()
 #pricing loop
-for(i in 2:(nrow(mat))){
-  #stockPrice -k, strikePrice-k , riskFreeRate-k , timeToExpiry, volatility, type
-  #what vol do we need
+for(i in 1:(nrow(mat) - 1)){ 
+  # 1 : row -1 bc prices are end of min, no trading / option exp at 4pm. 
+  # Can price the option last at close of second to last min
   
   
   {
@@ -245,6 +242,7 @@ for(i in 2:(nrow(mat))){
 #should output 389 prices
 #at start of min at end of day cant trade
 
+reg_time[11,1] = 1
 
 }
 length(prices)
