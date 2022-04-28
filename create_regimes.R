@@ -3,7 +3,7 @@
 
 library(lubridate)
 library(bizdays)
-
+source("bizdays_config_file.R")
 #dynamic wd
 rm(list = ls())
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -21,7 +21,7 @@ load_data <- function (ticker, date, method, num){
   #returns: data.frame with days
   
   
-  wd = paste(getwd(), '/proc_data/', ticker, sep = '')
+  wd = paste(getwd(), '/proc_data/', ticker, ".csv", sep = '')
   tmp = strptime(paste(date, "09:29"), "%m-%d-%y %H:%M", 'EST')#9:29 bc non-inclusive select
 
   #TODO: Breaks if the day data doesnt exist
@@ -108,11 +108,7 @@ load_data <- function (ticker, date, method, num){
 create_regimes <- function(data, ticker, save_file){
   #creates regimes based on matrix input
   
-  wd = paste(getwd(), '/regimes/', ticker, sep = '')
   
-  if (!(dir.exists(wd))) {
-    dir.create(wd)
-  }
   
   #log returns
   log_data = data.frame(matrix(ncol = ncol(data), nrow = 389))
@@ -194,6 +190,13 @@ create_regimes <- function(data, ticker, save_file){
 }
 
 create_regimes_wrapper <- function(ticker, date, method, num, save_file){
+  wd = paste(getwd(), '/regimes/', ticker, sep = '')
+  
+  if (!(dir.exists(wd))) {
+    dir.create(wd)
+  }
+  
+  
   dt = load_data(ticker, date, method, num)
   reg = create_regimes(dt, ticker)
   wd = paste(getwd(), '/regimes/', ticker, sep = '')
@@ -215,12 +218,31 @@ create_regimes_wrapper <- function(ticker, date, method, num, save_file){
 ####In progress stuff outside function
 ################################################
 
-t = load_data('FB', '4-14-20', 0, 10)
+#t = load_data('APPL', '4-14-22', 0, 10)
 # data = t
 # create_regimes(t, 'FB')
 
-create_regimes_wrapper('FB', '4-14-20', 0, 10, TRUE)
+#create_regimes_wrapper('FB', '4-14-20', 0, 10, TRUE)
 
+
+###FOR APRIL 22 TESTING
+
+temp_fun <- function(){
+  date = '4-11-22'
+  days_back = 5
+  
+  files = list.files("raw_data")
+  
+  for(i in files){
+    cat("Regimes for:", i)
+    create_regimes_wrapper(i, date, 0, days_back, TRUE)
+  }
+}
+
+temp_fun()
+
+
+{
 # 
 # {
 # 
@@ -305,4 +327,4 @@ create_regimes_wrapper('FB', '4-14-20', 0, 10, TRUE)
 # }
 # 
 
-
+}

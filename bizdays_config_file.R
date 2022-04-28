@@ -1,9 +1,9 @@
 #creates the trading day calendar
 
 library(bizdays)
+#install.packages("bizdays")
 library(lubridate)
 
-rm(list = ls())
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 df = read.csv(paste(getwd(), 
@@ -17,4 +17,4 @@ create.calendar(name = 'USA 1980-2030',
                 start.date = '1980-1-1',
                 end.date = '2031-1-1')
 
-calendars()
+

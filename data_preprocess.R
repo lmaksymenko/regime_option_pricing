@@ -19,10 +19,10 @@
 
 
 #dynamic cwd set
-rm(list = ls())
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 parse_ticker_data <- function(ticker){
+  #probably best to not have same tickers in proc_data?
   
   rd = paste(getwd(), "/raw_data/", ticker, sep = '')
   dir_files = list.files(rd)
@@ -58,12 +58,23 @@ parse_ticker_data <- function(ticker){
     }
     
   }
-  write.csv(final_df, paste(getwd(), "/proc_data/", ticker, sep = ''))
+  write.csv(final_df, paste(getwd(), "/proc_data/", ticker, ".csv", sep = ''))
 
 }
 
 
 
-#run the function
-parse_ticker_data('FB')
+
+###FOR APRIL 22 TESTING
+
+store_stock_data <- function(){
+  
+  files = list.files("raw_data")
+  
+  for(i in files){
+    parse_ticker_data(i)
+  }
+}
+
+store_stock_data()
 
