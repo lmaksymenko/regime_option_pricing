@@ -33,7 +33,7 @@ BlackScholes <- function(stockPrice, strikePrice, riskFreeRate, timeToExpiry, vo
 load_data <- function (ticker, date, method, num){
   # loads the data for the ticker
   # ticker: string, all caps, no extra spaces
-  # date: string, mm/dd/yy
+  # date: string, mm-dd-yy
   # method: int
   #   0 days: num trailing days
   #   1 weeks: current day of the week for num trailing weeks 
@@ -125,6 +125,15 @@ load_data <- function (ticker, date, method, num){
 price_options <- function(regs, pricing_data, strike, rfr, type, days_to_exp){
   #Regimes in the standard regime format
   #Data: Dataframe MUST HAVE Time HH:MM, Price MUST BE FOR 1 STRIKE ONLY (INGNORE FOR NOW)
+  
+  #regs: regime table in the standard format
+  #pricing_data: currently, needs to have `Time` col HH:MM, and `Stock.Quote` with the stock price
+  #strike: strike of option
+  #rfr: risk free rate: just set to 0 bc we poor
+  #type: call or put
+  #days_to_exp: days until expiration of the option
+  
+  
   days = days_to_exp
   vol = as.numeric(unlist(regs['Volatility']))
   data = pricing_data
@@ -183,6 +192,7 @@ price_options <- function(regs, pricing_data, strike, rfr, type, days_to_exp){
   
 }
 
+
 april11_scraped_data_pricing <- function(){
     
   files = list.files("raw_data")
@@ -210,88 +220,35 @@ april11_scraped_data_pricing <- function(){
   }
 }
 
-april11_scraped_data_pricing()
+#april11_scraped_data_pricing()
 
-#consistant undershoot
+april11_scraped_data_pricing_benchmark <- function(){
+  
+  files = list.files("raw_data")
+  for(i in files){
+    #regime file name format (modify the ending to be the regimes to be what you want)
+    regs = read.table(paste(getwd(), '/regimes/', i, '/', i, '_4-11-22_0_30_d.csv', sep = ''), header = TRUE)
+    #folder to read the price, bid, ask data
+    strike_files = list.files("ScrapebyDateCoStrike/11APRStrike/", 
+                              paste("_", i, "_", sep = ""))
+    
+    for(j in strike_files){
+      cat("Processing: ", j, "\n")
+      data = read.csv(paste("ScrapebyDateCoStrike/11APRStrike/", j, sep=""))
+      
+      
+      data = subset(data, data$Time < "16:01" & data$Time > "09:29") #remove post close times
+      #jank but i dont have time, extracts the strike from the name
+      str = j
+      strike = as.numeric(unlist(regmatches(str,
+                                            gregexpr("[[:digit:]]+\\.*[[:digit:]]*",str))))[2]
+      
+      tmp = price_options(regs, data, strike, 0, 'call', 3)
+      data["Prices"] = tmp
+      write.csv(data, paste("pricing_outputs/11APR_B/", "pricing_", toString(j),"_b", sep = ""))
+    }
+    
+  }
+}
 
-
-# ############################# OLD STUFF
-# regs = read.table(paste(getwd(), '/regimes/FB/FB_4-14-20_0_10.csv', sep = ''), header = TRUE)
-# vol = as.numeric(unlist(regs['Volatility']))
-# 
-# 
-# #Loading the scraped data
-# #This will change based on the data that we have
-# tmp = read.csv("ScrapebyDateCoStrike/11APRStrike/11APR_AAPL_160.csv")
-# tmp = subset(tmp, tmp$Time < "16:01") #remove post close times
-# data = tmp[c("Stock.Quote", "Bid", "Ask")]
-# row.names(data) = tmp[["Time"]]
-# 
-# 
-# strike = 0
-# rfr = 0
-# type = "call"
-# current_date = " "
-# exp_date = ""
-# 
-# days = 1
-# 
-# ##set up the regimes data
-# reg_index = c()#matrix(data = NA, nrow = 390, ncol = 2)
-# 
-# 
-# reg_time = c()
-# 
-# for(i in 1:nrow(regs)){
-#   #reg_index[regs[i, 'Start.Time']:regs[i,'End.Time'], 2] = rep.int(i, regs[i,'End.Time']- regs[i, 'Start.Time'] + 1)
-#   reg_index = c(reg_index, rep.int(i, regs[i,'End.Time']- regs[i, 'Start.Time']))
-#   reg_time[i] = (regs[i,'End.Time'] - regs[i, 'Start.Time']) * days #sums to 389 min
-# }
-# 
-# 
-# reg_time_vectors = list()
-# 
-# #get the time vectors
-# for(i in 1:length(reg_index)){
-#   reg_time[reg_index[i]] = reg_time[reg_index[i]] - 1
-#   reg_time_vectors = append(reg_time_vectors, list(reg_time))
-# }
-# #times current come out indexed 1 backwards?
-# 
-# inds = lapply(seq(strptime("09:31", "%H:%M"), 
-#                   strptime("09:30", "%H:%M") + minutes(389),
-#                   by = 'min'), 
-#               function (x) format(ymd_hms(x), '%H:%M'))
-# 
-# reg_time_vectors = data.frame(reg_time_vectors)#, row.names = inds)
-# reg_time_vectors = t(reg_time_vectors)
-# row.names(reg_time_vectors) = inds 
-# #yea we want to have "as if open" so we are slightly off
-# 
-# prices = c()
-# #reg_time_vectors["09:31",]
-# 
-# for(i in row.names(data)){
-#   print(i)
-#   stock_price = data[i, "Stock.Quote"]
-#   time_vec = reg_time_vectors[i,]
-#   
-#   bs_tmp = BlackScholes(stock_price, #stock price
-#                         strike, #option strike
-#                         rfr,
-#                         time_vec / (60 * 6.5 * 252),#time till exp in years
-#                         vol, #annualized vol of regimes
-#                         type)
-#   
-#   
-#   #could use log ret to find regimes, we could use realized vol instead of log returns to get the vol (stretch)
-#   #p = weighted.mean(bs_tmp, w = reg_time)
-#   weight = time_vec / sum(time_vec)
-#   p = sum(bs_tmp * weight)
-#   prices = c(prices, p)
-# }
-# 
-# #evaluation
-# 
-# data["Prices"] = prices
-# #plot the bid ask
+april11_scraped_data_pricing_benchmark()

@@ -1,5 +1,6 @@
 #loads data from csvs
 #creates the regimes
+#most of this code is just duplicated from the create_regimes 
 
 #dynamic wd
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -11,7 +12,7 @@ source("bizdays_config_file.R")
 rm(list = ls())
 
 
-load_data <- function (ticker, date, method, num){
+load_data <- function (ticker, date, method, num, mute = F){
   # loads the data for the ticker
   # ticker: string, all caps, no extra spaces
   # date: string, mm-dd-yy
@@ -26,9 +27,9 @@ load_data <- function (ticker, date, method, num){
   
   wd = paste(getwd(), '/proc_data/', ticker, ".csv", sep = '')
   tmp = strptime(paste(date, "09:29"), "%m-%d-%y %H:%M", 'EST')#9:29 bc non-inclusive select
-
+  
   #TODO: Breaks if the day data doesnt exist
-  get_data <- function(ticker, dates, wd){
+  get_data <- function(ticker, dates, wd, mute){
     #function is query the day data for a given list of days
     
     #makes minute indicies 
@@ -39,7 +40,7 @@ load_data <- function (ticker, date, method, num){
     
     full_dt = read.csv(wd)
     full_dt$datetime = strptime(full_dt$datetime, '%Y-%m-%d %H:%M:%S', 'EST')
-
+    
     fin_d = data.frame(matrix(ncol = 0, nrow = 390)) #matrix bc dataframe needs defined row num 
     rownames(fin_d) = inds
     
@@ -59,9 +60,11 @@ load_data <- function (ticker, date, method, num){
       if(is.na(d_tmp)){
         print(paste('No Data For:', upper))
       }else{
-        print(paste('added: ', d_tmp))
+        if(!mute){
+          print(paste('added: ', d_tmp))
+        }
       }
-    
+      
       #merge by row index
       fin_d = cbind(fin_d, tmp_dt[,"close"][match(rownames(fin_d), rownames(tmp_dt))])
     }
@@ -100,11 +103,11 @@ load_data <- function (ticker, date, method, num){
   }
   
   #return the dataframe
-  return(data.frame(get_data(ticker, dates, wd)))
+  return(data.frame(get_data(ticker, dates, wd, mute)))
 }
 
 
-create_regimes <- function(data, ticker, save_file){
+create_benchmark_regimes <- function(data, ticker, save_file){
   #creates regimes based on matrix input
   
   #log returns
@@ -112,81 +115,26 @@ create_regimes <- function(data, ticker, save_file){
   colnames(log_data) = colnames(data)
   
   for (col in colnames(data)){
-    #adding 1 to avoid NaNs from neg logs
-    #log_data[,col] = log( c(diff(data[,col])/data[,col][-1]) + 1)# dont add 1 s
     log_data[,col] = diff(log(data[,col]))
-        #
   }
   
-  #params
-  smpl = 5 #number of minutes we sample
-  
-  
-  day_scale = c(5,4,3,2,1,0) #how we discount the previous days(unused)
-  
-  #for loop vars
   regs = matrix(ncol = 6, nrow = 0)
   colnames(regs) = c("Regime","Start Time","End Time","Mean","Standard Deviation","Volatility")
-  
-  #helper vars
-  curr_reg = c()
-  start = 1
-  count = 1
-  
-  for (i in seq(from = 1 + smpl, to = 389, by = smpl)){
-    #old data
-    curr_reg = c(curr_reg, unlist(log_data[(i - smpl):(i - 1), ], use.names = FALSE) )#last is col
-    
-    #TODO: weighted days
-    #for each day in the data
-    # for(j in 1:ncol(log_data)){
-    #   log_data[i:(i + smpl), j]
-    #   
-    # }
-    
-    #data
-    new_data = log_data[i:(i + smpl - 1), ]  #last is col
-    
-    #fix format
-    new_data = unlist(new_data, use.names = FALSE)
-    
-    #print(unlist(new_data, use.names = FALSE))
-    
-    if(ks.test(curr_reg, new_data)$p.value < 0.05){  #replace with ks.boot?, allows ties
-      #new regime
-      
-      #print(curr_reg)
-      tmp = c(count,
-              start,#start index
-              i,#stop index
-              mean(curr_reg, na.rm = TRUE),
-              sd(curr_reg, na.rm = TRUE),
-              sd(curr_reg, na.rm = TRUE) * sqrt(60*6.5*252))
-      regs = rbind(regs, tmp)
-      
-      start = i
-      count = count + 1
-      curr_reg = c()
-    }
-  }
-  #currently the ks.test generates warnings about ties (duplicated values in the later stages of the dataset)
-  
-  #add the remaining points to the last regime
-  ###we treat the remaining datapoints as part of the latest regime and add regime to dataset
-  curr_reg = rbind(curr_reg, new_data)
-  tmp = c(count,
-          start,#start index
-          390,#stop index
-          mean(curr_reg, na.rm = TRUE),
-          sd(curr_reg, na.rm = TRUE),
-          sd(curr_reg, na.rm = TRUE) * sqrt(60*6.5*252))
-  regs = rbind(regs, tmp)
 
+  tmp = c(1,
+          1,
+          390,
+          mean(unlist(log_data), na.rm = TRUE),
+          sd(unlist(log_data), na.rm = TRUE),
+          sd(unlist(log_data), na.rm = TRUE) * sqrt(60*6.5*252))
+  regs = rbind(regs, tmp)
+  
   
   return(regs)
 }
 
-create_regimes_wrapper <- function(ticker, date, method, num, save_file){
+#for creating regimes interact with the wrapper instead
+create_regimes_wrapper <- function(ticker, date, method, num, save_file, mute_load = T){
   wd = paste(getwd(), '/regimes/', ticker, sep = '')
   
   if (!(dir.exists(wd))) {
@@ -194,35 +142,34 @@ create_regimes_wrapper <- function(ticker, date, method, num, save_file){
   }
   
   
-  dt = load_data(ticker, date, method, num)
-  reg = create_regimes(dt, ticker)
+  dt = load_data(ticker, date, method, num, mute_load)
+  reg = create_benchmark_regimes(dt, ticker)
   wd = paste(getwd(), '/regimes/', ticker, sep = '')
   w_loc = paste(wd, '/',
                 ticker, '_', 
                 date, '_', 
                 method, '_', 
-                num, '.csv', sep ='')
-
+                num, '_d',
+                '.csv', sep ='')
+  
   if (save_file){
     write.table(reg, file = w_loc, row.names = FALSE) 
+    cat('Wrote: ', w_loc, '\n')
   }
   
   return(reg)
 }
 
-
-
-###FOR APRIL 22 TESTING
-
+#This will run the function for all the stocks that raw_data exists for
 auto_fun <- function(){
   date = '4-11-22'
-  days_back = 5
+  days_back = 30
   
   files = list.files("raw_data")
   
   for(i in files){
-    cat("Regimes for:", i)
-    create_regimes_wrapper(i, date, 0, days_back, TRUE)
+    cat("Regimes for:", i, "\n")
+    create_regimes_wrapper(i, date, 0, days_back, TRUE, TRUE)
   }
 }
 
