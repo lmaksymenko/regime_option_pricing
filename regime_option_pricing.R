@@ -245,7 +245,7 @@ april11_scraped_data_pricing_benchmark <- function(){
       
       tmp = price_options(regs, data, strike, 0, 'call', 3)
       data["Prices"] = tmp
-      write.csv(data, paste("pricing_outputs/11APR_B/", "pricing_", toString(j),"_b", sep = ""))
+      write.csv(data, paste("pricing_outputs/11APR_B/", "b_pricing_", toString(j), sep = ""))
     }
     
   }
